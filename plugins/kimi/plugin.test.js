@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { makeCtx } from "../test-helpers.js"
 
 const CRED_PATH = "~/.kimi/credentials/kimi-code.json"
+const KIMI_CODE_CRED_PATH = "~/.kimi-code/credentials/kimi-code.json"
 
 const loadPlugin = async () => {
   await import("./plugin.js")
@@ -18,6 +19,40 @@ describe("kimi plugin", () => {
     const ctx = makeCtx()
     const plugin = await loadPlugin()
     expect(() => plugin.probe(ctx)).toThrow("Not logged in")
+  })
+
+  it("loads credentials from the current Kimi Code home path", async () => {
+    const ctx = makeCtx()
+    const nowSec = Math.floor(Date.now() / 1000)
+    ctx.host.fs.writeText(
+      KIMI_CODE_CRED_PATH,
+      JSON.stringify({
+        access_token: "token",
+        refresh_token: "refresh-token",
+        expires_at: nowSec + 3600,
+      })
+    )
+    ctx.host.http.request.mockReturnValue({
+      status: 200,
+      bodyText: JSON.stringify({
+        usage: { limit: "100", remaining: "88", resetTime: "2099-02-11T00:00:00Z" },
+        limits: [
+          {
+            window: { duration: 300, timeUnit: "TIME_UNIT_MINUTE" },
+            detail: { limit: "100", remaining: "89", resetTime: "2099-02-07T00:00:00Z" },
+          },
+        ],
+      }),
+    })
+
+    const plugin = await loadPlugin()
+    const result = plugin.probe(ctx)
+
+    expect(result.lines.find((line) => line.label === "Session")).toBeTruthy()
+    const usageCall = ctx.host.http.request.mock.calls.find((call) =>
+      String(call[0]?.url).includes("/usages")
+    )
+    expect(usageCall?.[0]?.headers?.Authorization).toBe("Bearer token")
   })
 
   it("refreshes token and renders session + weekly usage", async () => {

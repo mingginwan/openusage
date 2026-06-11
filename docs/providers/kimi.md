@@ -8,7 +8,7 @@
 - **Base URL:** `https://api.kimi.com/coding/v1`
 - **Auth provider:** `https://auth.kimi.com` (OAuth 2.0)
 - **Client ID:** `17e5f671-d194-4dfb-9706-5516cb48c098`
-- **Token store:** `~/.kimi/credentials/kimi-code.json`
+- **Token store:** `~/.kimi-code/credentials/kimi-code.json` (current Kimi Code CLI), with `~/.kimi/credentials/kimi-code.json` as a legacy fallback
 
 ## Endpoints
 
@@ -81,7 +81,11 @@ refresh_token=<refresh_token>
 
 ## Authentication File
 
-`~/.kimi/credentials/kimi-code.json`
+OpenUsage checks these credential paths in order:
+
+1. `~/.kimi-code/credentials/kimi-code.json`
+2. `~/.kimi/credentials/kimi-code.json` (legacy)
+
 
 ```jsonc
 {
